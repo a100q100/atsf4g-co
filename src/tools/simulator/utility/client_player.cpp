@@ -6,11 +6,12 @@
 
 #include <iostream>
 
+#include "client_player.h"
+#include "client_simulator.h"
 #include <cli/shell_font.h>
 #include <libatgw_inner_v1_c.h>
 #include <proto_base.h>
-#include "client_player.h"
-#include "client_simulator.h"
+
 
 
 #define GTCLI2PLAYER(ctx) (*reinterpret_cast<client_player *>(libatgw_inner_v1_c_get_private_data(ctx)))
@@ -128,7 +129,17 @@ int client_player::on_connected(libuv_ptr_t net, int status) {
     libatgw_inner_v1_c_context proto_handle = mutable_proto_context(net);
     libatgw_inner_v1_c_set_private_data(proto_handle, this);
 
-    int32_t res = libatgw_inner_v1_c_start_session(proto_handle);
+
+    std::string all_avail_types;
+    uint64_t type_sz = libatgw_inner_v1_c_global_get_crypt_size();
+    for (uint64_t i = 0; i < type_sz; ++i) {
+        if (0 != i) {
+            all_avail_types += ":";
+        }
+        all_avail_types += libatgw_inner_v1_c_global_get_crypt_name(i);
+    }
+
+    int32_t res = libatgw_inner_v1_c_start_session(proto_handle, all_avail_types.c_str());
     if (res < 0) {
         util::cli::shell_stream ss(std::cerr);
         ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "start session failed, res" << res << std::endl;
